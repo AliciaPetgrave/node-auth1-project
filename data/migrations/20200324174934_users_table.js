@@ -8,9 +8,10 @@ exports.up = function(knex) {
           .notNullable()
           .unique();
         users.string('password', 128).notNullable();
+        users.string('department')
       });
 };
 
 exports.down = function(knex) {
-  return knex.schema.dropTableIfEists('users')
+  return knex.schema.dropTableIfExists('users')
 };
