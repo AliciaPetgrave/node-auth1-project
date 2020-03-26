@@ -1,7 +1,9 @@
 const bcrypt = require('bcryptjs')
 const router = require('express').Router()
+const jwt = require('jsonwebtoken')
 
 const Users = require('../users/users-model')
+const { jwtSecret } = require("../config/secrets.js");
 
 //Post register
 router.post("/register", (req, res) => {
@@ -13,9 +15,9 @@ router.post("/register", (req, res) => {
   
     Users.add(userInfo)
       .then(user => {
-        res.json(user);
+        res.status(200).json(user);
       })
-      .catch(err => res.send(err));
+      .catch(err => res.status(500).json(err));
   });
 
 //Post login
@@ -25,12 +27,9 @@ router.post("/login", (req, res) => {
     Users.findBy({ username })
       .then(([user]) => {
         if (user && bcrypt.compareSync(password, user.password)) {
-          req.session.user = {
-            id: user.id,
-            username: user.username,
-          };
+          const token = generateToken(user)
   
-          res.status(200).json({ welcome: user.username });
+          res.status(200).json({ welcome: `${user.username}`, token });
         } else {
           res.status(401).json({ message: "invalid username or password" });
         }
@@ -59,6 +58,21 @@ router.get("/logout", (req, res) => {
       res.status(200).json({ message: "I don't know you" });
     }
   });
+
+  //jwt
+  function generateToken(user) {
+    const payload = {
+      subject: user.id,
+      username: user.username,
+      role: user.role || "user",
+    };
+  
+    const options = {
+      expiresIn: "1h",
+    };
+  
+    return jwt.sign(payload, jwtSecret, options);
+  }
 
 
 module.exports = router
